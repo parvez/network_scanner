@@ -16,7 +16,11 @@ class NetworkScanner(Entity):
         self._state = None
         self.hass = hass
         self.ip_range = ip_range
+
+        _LOGGER.debug("mac_mapping unparsed: %s", mac_mapping)
         self.mac_mapping = self.parse_mac_mapping(mac_mapping)
+        _LOGGER.debug("mac_mapping parsed: %s", mac_mapping)
+
         self.nm = nmap.PortScanner()
         _LOGGER.info("Network Scanner initialized")
 
@@ -56,7 +60,7 @@ class NetworkScanner(Entity):
         """Parse the MAC mapping string into a dictionary."""
         mapping = {}
         for line in mapping_string.split('\n'):
-            parts = line.split('\t')
+            parts = line.split(';')
             if len(parts) >= 3:
                 mapping[parts[0].lower()] = (parts[1], parts[2])
         return mapping
@@ -89,11 +93,14 @@ class NetworkScanner(Entity):
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up the Network Scanner sensor from a config entry."""
     ip_range = config_entry.data.get("ip_range")
+    _LOGGER.debug("ip_range: %s", config_entry.data.get("ip_range"))
+    _LOGGER.info("mac_mapping_1: %s", config_entry.data.get("mac_mapping_1"))
     mac_mappings = "\n".join(
         config_entry.data.get(f"mac_mapping_{i+1}", "")
         for i in range(25)
         if config_entry.data.get(f"mac_mapping_{i+1}")
     )
+    _LOGGER.debug("mac_mappings: %s", mac_mappings)
     
     scanner = NetworkScanner(hass, ip_range, mac_mappings)
     async_add_entities([scanner], True)

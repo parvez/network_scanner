@@ -25,13 +25,13 @@ Configure the integration through the Home Assistant UI:
    - MAC address (e.g., `bc:14:14:f1:81:1b`)
    - Friendly name (e.g., `Brother Printer`)
    - Manufacturer (e.g., `Cloud Network Technology Singapore Pte. Ltd.`)
-6. Separate each field with a tab and each mapping entry with a newline.
+6. Separate each field with a semi-colon and each mapping entry with a newline.
 
 Example of entries in the config flow input fields:
 
 ```plaintext
-bc:14:14:f1:81:1b{TAB}Brother Printer{TAB}Cloud Network Technology Singapore Pte. Ltd.
-b1:81:11:31:a1:b1{TAB}My iPhone{TAB}Apple Inc.
+bc:14:14:f1:81:1b;Brother Printer;Cloud Network Technology Singapore Pte. Ltd.
+b1:81:11:31:a1:b1;My iPhone;Apple Inc.
 ```
 
 <img width="350" alt="Configuration Flow Example" src="https://github.com/parvez/network_scanner/assets/126749/bf08bc6d-a4a1-478c-8acb-5beffada2632">
