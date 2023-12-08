@@ -72,6 +72,8 @@ class NetworkScanner(Entity):
                     "type": device_type
                 })
 
+        # Sort the devices by IP address
+        devices.sort(key=lambda x: [int(num) for num in x['ip'].split('.')])
         return devices
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
