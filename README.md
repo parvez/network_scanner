@@ -34,8 +34,7 @@ bc:14:14:f1:81:1b{TAB}Brother Printer{TAB}Cloud Network Technology Singapore Pte
 b1:81:11:31:a1:b1{TAB}My iPhone{TAB}Apple Inc.
 ```
 
-<img width="350" alt="Configuration Flow Example" src="https://github.com/parvez/acwd_water_usage/assets/126749/eb7a691b-0adb-4539-8d08-8005f39b85f2">
-
+<img width="350" alt="Configuration Flow Example" src="https://github.com/parvez/network_scanner/assets/126749/bf08bc6d-a4a1-478c-8acb-5beffada2632">
 
 *Refer to the configuration flow image provided for a visual guide.*
 
@@ -59,7 +58,7 @@ content: >
 
 This card will display a table with the IP Address, MAC Address, Name, and Type of each device that has been scanned in your network. Here's how it will look:
 
-<img width="350" alt="Network Scanner Device List" src="https://github.com/parvez/acwd_water_usage/assets/126749/eb7a691b-0adb-4539-8d08-8005f39b85f2">
+<img width="800" alt="Network Scanner Device List" src="https://github.com/parvez/network_scanner/assets/126749/c457155e-0da5-4f82-a728-661e2d2caa19">
 
 
 ## Technical Details
