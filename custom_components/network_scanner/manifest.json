@@ -6,6 +6,6 @@
   "dependencies": [],
   "codeowners": ["@parvez"],
   "requirements": ["python-nmap"],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "iot_class": "local_polling"
 }

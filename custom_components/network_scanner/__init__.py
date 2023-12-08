@@ -3,6 +3,8 @@ from .const import DOMAIN
 
 async def async_setup(hass, config):
     """Set up the Network Scanner component."""
+    # Store YAML configuration in hass.data
+    hass.data[DOMAIN] = config.get(DOMAIN, {})
     return True
 
 async def async_setup_entry(hass, config_entry):
