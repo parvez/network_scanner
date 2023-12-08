@@ -21,6 +21,16 @@ class NetworkScanner(Entity):
         _LOGGER.info("Network Scanner initialized")
 
     @property
+    def should_poll(self):
+        """Return True as updates are needed via polling."""
+        return True
+
+    @property
+    def unique_id(self):
+        """Return unique ID."""
+        return f"network_scanner_{self.ip_range}"
+
+    @property
     def name(self):
         return 'Network Scanner'
 
