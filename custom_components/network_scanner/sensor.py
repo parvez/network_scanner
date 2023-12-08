@@ -1,8 +1,8 @@
 import logging
-import subprocess
-import json
+import nmap
 from datetime import timedelta
 from homeassistant.helpers.entity import Entity
+from .const import DOMAIN
 
 SCAN_INTERVAL = timedelta(minutes=15)
 
@@ -17,6 +17,7 @@ class NetworkScanner(Entity):
         self.hass = hass
         self.ip_range = ip_range
         self.mac_mapping = self.parse_mac_mapping(mac_mapping)
+        self.nm = nmap.PortScanner()
         _LOGGER.info("Network Scanner initialized")
 
     @property
@@ -56,22 +57,31 @@ class NetworkScanner(Entity):
 
     def scan_network(self):
         """Scan the network and return device information."""
+        self.nm.scan(hosts=self.ip_range, arguments='-sn')
         devices = []
-        nmap_command = f'nmap -sn {self.ip_range} -oG -'
-        nmap_output = subprocess.check_output(nmap_command, shell=True, text=True)
 
-        for line in nmap_output.splitlines():
-            if "Up" in line:
-                ip = line.split()[1]
-                arp_command = f'arp -n | awk -v ip="{ip}" \'$1 == ip && $3 != "00:00:00:00:00:00" {{print $3}}\''
-                mac = subprocess.check_output(arp_command, shell=True, text=True).strip()
-                if mac:
-                    device_name, device_type = self.get_device_info_from_mac(mac)
-                    devices.append({
-                        "ip": ip,
-                        "mac": mac,
-                        "name": device_name,
-                        "type": device_type
-                    })
+        for host in self.nm.all_hosts():
+            if 'mac' in self.nm[host]['addresses']:
+                ip = self.nm[host]['addresses']['ipv4']
+                mac = self.nm[host]['addresses']['mac']
+                device_name, device_type = self.get_device_info_from_mac(mac)
+                devices.append({
+                    "ip": ip,
+                    "mac": mac,
+                    "name": device_name,
+                    "type": device_type
+                })
 
         return devices
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the Network Scanner sensor from a config entry."""
+    ip_range = config_entry.data.get("ip_range")
+    mac_mappings = "\n".join(
+        config_entry.data.get(f"mac_mapping_{i+1}", "")
+        for i in range(25)
+        if config_entry.data.get(f"mac_mapping_{i+1}")
+    )
+    
+    scanner = NetworkScanner(hass, ip_range, mac_mappings)
+    async_add_entities([scanner], True)
