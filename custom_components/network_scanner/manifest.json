@@ -1,0 +1,11 @@
+{
+  "domain": "network_scanner",
+  "name": "Network Scanner",
+  "config_flow": true,
+  "documentation": "https://github.com/parvez/network_scanner",
+  "dependencies": [],
+  "codeowners": ["@parvez"],
+  "requirements": ["beautifulsoup4", "nmap"],
+  "version": "1.0.0",
+  "iot_class": "local_polling"
+}

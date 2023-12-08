@@ -1,2 +1,1 @@
-# network_scanner
- 
+# Network Scanner for Home Assistant

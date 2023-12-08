@@ -1,0 +1,10 @@
+{
+  "name": "Network Scanner",
+  "content_in_root": false,
+  "zip_release": false,
+  "render_readme": true,
+  "country": "US",
+  "documentation": "https://www.github.com/parvez/network_scanner",
+  "issue_tracker": "https://www.github.com/parvez/network_scanner/issues",
+  "categories": ["integration"]
+}
