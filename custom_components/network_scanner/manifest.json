@@ -3,6 +3,7 @@
   "name": "Network Scanner",
   "config_flow": true,
   "documentation": "https://github.com/parvez/network_scanner",
+  "issue_tracker": "https://github.com/parvez/network_scanner/issues",
   "dependencies": [],
   "codeowners": ["@parvez"],
   "requirements": ["python-nmap"],
