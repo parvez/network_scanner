@@ -5,6 +5,5 @@
   "render_readme": true,
   "country": "US",
   "documentation": "https://www.github.com/parvez/network_scanner",
-  "issue_tracker": "https://www.github.com/parvez/network_scanner/issues",
-  "categories": ["integration"]
+  "issue_tracker": "https://www.github.com/parvez/network_scanner/issues"
 }
