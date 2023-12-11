@@ -60,15 +60,15 @@ type: markdown
 content: >
   ## Devices
 
-  | IP Address | MAC Address | Name | Type |
-  |------------|-------------|------|------|
+  | IP Address | MAC Address | Name | Type | Vendor |
+  |------------|-------------|------|------|--------|
 
   {% for device in state_attr('sensor.network_scanner', 'devices') %}
-  | {{ device.ip }} | {{ device.mac }} | {{ device.name }} | {{ device.type }} |
+  | {{ device.ip }} | {{ device.mac }} | {{ device.name }} | {{ device.type }} | {{ device.vendor }} |
   {% endfor %}
 ```
 
-This card will display a table with the IP Address, MAC Address, Name, and Type of each device that has been scanned in your network. Here's how it will look:
+This card will display a table with the IP Address, MAC Address, and Vendor of each device that has been scanned in your network. Name and Type are custom mapping provided by the user. Here's how it will look:
 
 <img width="800" alt="Network Scanner Device List" src="https://github.com/parvez/network_scanner/assets/126749/c457155e-0da5-4f82-a728-661e2d2caa19">
 
