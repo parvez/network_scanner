@@ -9,7 +9,19 @@ This Home Assistant integration provides a network scanner that identifies all d
 - Automatically updates the list of devices on a periodic basis.
 - Displays the total number of devices currently identified on the network.
 
-## Installation
+## Installation through HACS
+
+Once this integration is merged into HACS then you can install the network_scanner integration by searching for it there in HA instance.
+
+Until then you will have to add this repository manually:
+
+Go to HACS -> 3 dot menu -> Custom Repositories:-
+
+Paste https://github.com/parvez/network_scanner into Repository field and select Integration
+
+Now you should be able to find it in HACS as normal.
+
+## Manual Installation
 
 To install this integration, copy the `network_scanner` directory into the `custom_components` directory of your Home Assistant installation.
 
