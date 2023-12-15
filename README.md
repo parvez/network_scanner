@@ -51,7 +51,7 @@ b1:81:11:31:a1:b1;My iPhone;Apple Inc.
 *Refer to the configuration flow image provided for a visual guide.*
 
 
-## Displaying Devices in the UI
+## Displaying Devices in the UI using Markdown Card
 
 To visualize the devices detected by the Network Scanner in the Home Assistant interface, you can add a Lovelace Markdown card with the following configuration:
 
@@ -71,6 +71,39 @@ content: >
 This card will display a table with the IP Address, MAC Address, and Vendor of each device that has been scanned in your network. Name and Type are custom mapping provided by the user. Here's how it will look:
 
 <img width="800" alt="Network Scanner Device List" src="https://github.com/parvez/network_scanner/assets/126749/64309b93-a8cd-43b6-93ab-58d55a4aac32">
+
+## Displaying Devices in the UI using Flex Table
+
+Thanks to [@gridlockjoe](https://github.com/gridlockjoe), you can also display using the [Flex Table](https://github.com/custom-cards/flex-table-card) as such
+
+```yaml
+type: custom:flex-table-card
+title: Devices
+entities:
+  include: sensor.network_scanner
+sort_by: x.ip+
+columns:
+  - name: IP Address
+    data: devices
+    modify: x.ip
+  - name: MAC Address
+    data: devices
+    modify: x.mac
+  - name: Custom Name
+    data: devices
+    modify: x.name
+  - name: Custom Description
+    data: devices
+    modify: x.type
+  - name: Hostname
+    data: devices
+    modify: x.hostname
+  - name: Vendor
+    data: devices
+    modify: x.vendor
+```
+<img width="800" alt="Network Scanner Device List" src="https://github.com/parvez/network_scanner/assets/126749/b55f58ee-2f89-415f-b09b-fc457e52a074">
+
 
 ## Technical Details
 
