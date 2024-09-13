@@ -100,13 +100,33 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up the Network Scanner sensor from a config entry."""
     ip_range = config_entry.data.get("ip_range")
     _LOGGER.debug("ip_range: %s", config_entry.data.get("ip_range"))
-    _LOGGER.info("mac_mapping_1: %s", config_entry.data.get("mac_mapping_1"))
-    mac_mappings = "\n".join(
-        config_entry.data.get(f"mac_mapping_{i+1}", "")
-        for i in range(25)
-        if config_entry.data.get(f"mac_mapping_{i+1}")
-    )
-    _LOGGER.debug("mac_mappings: %s", mac_mappings)
     
+    # Initialize mac_mappings list to ensure at least 25 entries
+    mac_mappings_list = []
+
+    # Ensure we have at least 25 entries, even if config is missing some
+    for i in range(25):
+        key = f"mac_mapping_{i+1}"
+        mac_mapping = config_entry.data.get(key, "")
+        mac_mappings_list.append(mac_mapping)
+        _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
+
+    # Continue adding additional mac mappings if present in the config
+    i = 25
+    while True:
+        key = f"mac_mapping_{i+1}"
+        if key in config_entry.data:
+            mac_mapping = config_entry.data.get(key)
+            mac_mappings_list.append(mac_mapping)
+            _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
+            i += 1
+        else:
+            break
+
+    # Combine mac mappings into a newline-separated string
+    mac_mappings = "\n".join(mac_mappings_list)
+    _LOGGER.debug("mac_mappings: %s", mac_mappings)
+
+    # Set up the network scanner entity
     scanner = NetworkScanner(hass, ip_range, mac_mappings)
     async_add_entities([scanner], True)

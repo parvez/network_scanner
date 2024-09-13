@@ -33,7 +33,7 @@ Configure the integration through the Home Assistant UI:
 2. Click on the `+ Add Integration` button.
 3. Search for "Network Scanner" and select it.
 4. Enter the desired IP range for the network scan, e.g., `192.168.1.1-254` or use the CIDR notation like `192.168.1.0/24`.
-5. Optionally, provide MAC address to device mapping for up to 25 devices in the format:
+5. Optionally, provide MAC address to device mapping in the format in `configuration.yaml`:
    - MAC address (e.g., `bc:14:14:f1:81:1b`)
    - Friendly name (e.g., `Brother Printer`)
    - Manufacturer (e.g., `Cloud Network Technology Singapore Pte. Ltd.`)

@@ -27,14 +27,28 @@ class NetworkScannerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         # Add mac mappings with values from YAML if available
-        for i in range(25):
-            key = f"mac_mapping_{i+1}"
+        for i in range(1, 26):  # Ensure at least 25 entries
+            key = f"mac_mapping_{i}"
             if key in yaml_config:
-                _LOGGER.debug("YAML Config key: %s", yaml_config.get(key))
-                data_schema_dict[vol.Optional(key, description={"suggested_value": yaml_config.get(key)})] = str
+                suggested_value = yaml_config.get(key)
+                _LOGGER.debug("YAML Config key: %s", suggested_value)
             else:
-                data_schema_dict[vol.Optional(key)] = str
+                suggested_value = None  # No value in YAML config
+            
+            # Add the optional field to the schema, with or without suggested_value
+            data_schema_dict[vol.Optional(key, description={"suggested_value": suggested_value})] = str
 
+        # Continue to add more mappings if available in the YAML config
+        i = 26
+        while True:
+            key = f"mac_mapping_{i}"
+            if key in yaml_config:
+                suggested_value = yaml_config.get(key)
+                _LOGGER.debug("YAML Config key: %s", suggested_value)
+                data_schema_dict[vol.Optional(key, description={"suggested_value": suggested_value})] = str
+                i += 1
+            else:
+                break  # Exit loop when no more mappings are found in the YAML config
 
         _LOGGER.debug("schema: %s", format_dict_for_printing(data_schema_dict))
         data_schema = vol.Schema(data_schema_dict)
