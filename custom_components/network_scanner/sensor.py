@@ -75,7 +75,9 @@ class NetworkScanner(Entity):
         devices = []
 
         for host in self.nm.all_hosts():
+            _LOGGER.debug("Found Host: %s", host)
             if 'mac' in self.nm[host]['addresses']:
+                _LOGGER.debug("Found Mac: %s", self.nm[host]['addresses'])
                 ip = self.nm[host]['addresses']['ipv4']
                 mac = self.nm[host]['addresses']['mac']
                 vendor = "Unknown"
