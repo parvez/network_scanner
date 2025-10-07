@@ -1,134 +1,152 @@
+from __future__ import annotations
+import json
 import logging
-import nmap
-from datetime import timedelta
-from homeassistant.helpers.entity import Entity
-from .const import DOMAIN
+from typing import Any, Dict, List, Optional
 
-SCAN_INTERVAL = timedelta(minutes=15)
+import nmap
+from aiohttp import ClientError
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .const import DOMAIN, STATUS_SCANNING, STATUS_OK, STATUS_ERROR
 
 _LOGGER = logging.getLogger(__name__)
 
-class NetworkScanner(Entity):
-    """Representation of a Network Scanner."""
+def _norm_mac(mac: Optional[str]) -> str:
+    return (mac or "").upper()
 
-    def __init__(self, hass, ip_range, mac_mapping):
-        """Initialize the sensor."""
-        self._state = None
+def _parse_dir_obj(obj: Any) -> Dict[str, Dict[str, str]]:
+    out: Dict[str, Dict[str, str]] = {}
+    if not isinstance(obj, dict):
+        return out
+    block = obj.get("data", obj)
+    if not isinstance(block, dict):
+        return out
+    for k, v in block.items():
+        mk = _norm_mac(k)
+        if not mk:
+            continue
+        if isinstance(v, dict):
+            out[mk] = {"name": str(v.get("name", "")), "desc": str(v.get("desc", ""))}
+        else:
+            out[mk] = {"name": str(v), "desc": ""}
+    return out
+
+class NetworkScannerExtended(SensorEntity):
+    _attr_name = "Network Scanner Extended"
+    _attr_native_unit_of_measurement = "Devices"
+    _attr_should_poll = True
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
-        self.ip_range = ip_range
-
-        _LOGGER.debug("mac_mapping unparsed: %s", mac_mapping)
-        self.mac_mapping = self.parse_mac_mapping(mac_mapping)
-        _LOGGER.debug("mac_mapping parsed: %s", mac_mapping)
-
+        self.entry = entry
+        self.ip_range: str = entry.options.get("ip_range", entry.data.get("ip_range", ""))
+        self._state: Optional[int] = None
+        self._devices: List[Dict[str, Any]] = []
+        self._status: str = STATUS_OK
         self.nm = nmap.PortScanner()
-        _LOGGER.info("Network Scanner initialized")
 
     @property
-    def should_poll(self):
-        """Return True as updates are needed via polling."""
-        return True
+    def unique_id(self) -> str:
+        return f"{DOMAIN}_{self.ip_range}"
 
     @property
-    def unique_id(self):
-        """Return unique ID."""
-        return f"network_scanner_{self.ip_range}"
-
-    @property
-    def name(self):
-        return 'Network Scanner'
-
-    @property
-    def state(self):
+    def native_value(self) -> Optional[int]:
         return self._state
 
     @property
-    def unit_of_measurement(self):
-        return 'Devices'
+    def extra_state_attributes(self) -> Dict[str, Any]:
+        return {
+            "status": self._status,
+            "ip_range": self.ip_range,
+            "devices": self._devices,
+        }
 
-    async def async_update(self):
-        """Fetch new state data for the sensor."""
+    async def async_update(self) -> None:
+        # Build effective directory (entry.data base + options text/url)
         try:
-            _LOGGER.debug("Scanning network")
-            devices = await self.hass.async_add_executor_job(self.scan_network)
+            self._status = STATUS_SCANNING
+            directory: Dict[str, Dict[str, str]] = dict(self.entry.data.get("mac_directory", {}))
+
+            opts = self.entry.options or {}
+            # JSON text in options (highest precedence)
+            jtxt = (opts.get("mac_directory_json_text") or "").strip()
+            if jtxt:
+                try:
+                    directory.update(_parse_dir_obj(json.loads(jtxt)))
+                except Exception as exc:
+                    _LOGGER.warning("Invalid options JSON: %s", exc)
+
+            # Optional URL
+            url = (opts.get("mac_directory_json_url") or self.entry.data.get("mac_directory_json_url") or "").strip()
+            if url:
+                try:
+                    session = async_get_clientsession(self.hass)
+                    async with session.get(url, timeout=10) as resp:
+                        resp.raise_for_status()
+                        directory.update(_parse_dir_obj(json.loads(await resp.text())))
+                except (ClientError, Exception) as exc:
+                    _LOGGER.warning("Failed to fetch directory URL %s: %s", url, exc)
+
+            # Scan (blocking) in executor
+            devices = await self.hass.async_add_executor_job(self._scan_network, directory)
+            self._devices = devices
             self._state = len(devices)
-            self._attr_extra_state_attributes = {"devices": devices}
-        except Exception as e:
-            _LOGGER.error("Error updating network scanner: %s", e)
+            self._status = STATUS_OK
+        except Exception as exc:
+            self._status = STATUS_ERROR
+            _LOGGER.error("Network scan failed: %s", exc)
 
-    def parse_mac_mapping(self, mapping_string):
-        """Parse the MAC mapping string into a dictionary."""
-        mapping = {}
-        for line in mapping_string.split('\n'):
-            parts = line.split(';')
-            if len(parts) >= 3:
-                mapping[parts[0].lower()] = (parts[1], parts[2])
-        return mapping
-
-    def get_device_info_from_mac(self, mac_address):
-        """Retrieve device name and type from the MAC mapping."""
-        return self.mac_mapping.get(mac_address.lower(), ("Unknown Device", "Unknown Device"))
-
-    def scan_network(self):
-        """Scan the network and return device information."""
-        self.nm.scan(hosts=self.ip_range, arguments='-sn')
-        devices = []
-
+    def _scan_network(self, directory: Dict[str, Dict[str, str]]) -> List[Dict[str, Any]]:
+        self.nm.scan(hosts=self.ip_range, arguments="-sn")
+        devices: List[Dict[str, Any]] = []
         for host in self.nm.all_hosts():
-            _LOGGER.debug("Found Host: %s", host)
-            if 'mac' in self.nm[host]['addresses']:
-                _LOGGER.debug("Found Mac: %s", self.nm[host]['addresses'])
-                ip = self.nm[host]['addresses']['ipv4']
-                mac = self.nm[host]['addresses']['mac']
+            try:
+                node = self.nm[host]
+                addrs = node.get("addresses", {})
+                mac = addrs.get("mac")
+                ip = addrs.get("ipv4") or addrs.get("ipv6") or ""
+                if not mac or not ip:
+                    continue
+
                 vendor = "Unknown"
-                if 'vendor' in self.nm[host] and mac in self.nm[host]['vendor']:
-                    vendor = self.nm[host]['vendor'][mac]
-                hostname = self.nm[host].hostname()
-                device_name, device_type = self.get_device_info_from_mac(mac)
+                ven_map = node.get("vendor", {})
+                if isinstance(ven_map, dict):
+                    for k, v in ven_map.items():
+                        if _norm_mac(k) == _norm_mac(mac):
+                            vendor = v
+                            break
+
+                hostname = node.hostname() or ""
+                override = directory.get(_norm_mac(mac), {})
+                name = override.get("name") or "Unknown Device"
+                desc = override.get("desc") or "Unknown Device"
+
                 devices.append({
                     "ip": ip,
                     "mac": mac,
-                    "name": device_name,
-                    "type": device_type,
+                    "name": name,
+                    "type": desc,
                     "vendor": vendor,
-                    "hostname": hostname
+                    "hostname": hostname,
                 })
+            except Exception as exc:
+                _LOGGER.debug("Skipping host %s: %s", host, exc)
 
-        # Sort the devices by IP address
-        devices.sort(key=lambda x: [int(num) for num in x['ip'].split('.')])
+        def _ip_key(ip_str: str) -> List[int]:
+            try:
+                return [int(p) for p in ip_str.split(".")]
+            except Exception:
+                return [999, 999, 999, 999]
+
+        devices.sort(key=lambda d: _ip_key(d.get("ip", "")))
         return devices
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the Network Scanner sensor from a config entry."""
-    ip_range = config_entry.data.get("ip_range")
-    _LOGGER.debug("ip_range: %s", config_entry.data.get("ip_range"))
-    
-    # Initialize mac_mappings list to ensure at least 25 entries
-    mac_mappings_list = []
-
-    # Ensure we have at least 25 entries, even if config is missing some
-    for i in range(25):
-        key = f"mac_mapping_{i+1}"
-        mac_mapping = config_entry.data.get(key, "")
-        mac_mappings_list.append(mac_mapping)
-        _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
-
-    # Continue adding additional mac mappings if present in the config
-    i = 25
-    while True:
-        key = f"mac_mapping_{i+1}"
-        if key in config_entry.data:
-            mac_mapping = config_entry.data.get(key)
-            mac_mappings_list.append(mac_mapping)
-            _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
-            i += 1
-        else:
-            break
-
-    # Combine mac mappings into a newline-separated string
-    mac_mappings = "\n".join(mac_mappings_list)
-    _LOGGER.debug("mac_mappings: %s", mac_mappings)
-
-    # Set up the network scanner entity
-    scanner = NetworkScanner(hass, ip_range, mac_mappings)
-    async_add_entities([scanner], True)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
+    ip_range = entry.options.get("ip_range", entry.data.get("ip_range"))
+    if not ip_range:
+        _LOGGER.error("network_scanner: ip_range missing; not creating entity")
+        return
+    async_add_entities([NetworkScannerExtended(hass, entry)], False)

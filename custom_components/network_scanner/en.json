@@ -1,0 +1,15 @@
+{
+  "title": "Network Scanner Extended",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Network Scanner Extended",
+        "description": "Enter the IP range and an optional MAC directory (JSON text or URL)."
+      }
+    },
+    "error": {
+      "invalid_json": "That JSON isn’t valid. Paste a JSON object (optionally with a top-level \"data\" object).",
+      "invalid_ip_range": "Please enter a valid CIDR range, e.g. 192.168.1.0/24."
+    }
+  }
+}
