@@ -131,4 +131,4 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
     # Set up the network scanner entity
     scanner = NetworkScanner(hass, ip_range, mac_mappings)
-    async_add_entities([scanner], True)
+    async_add_entities([scanner], False)
