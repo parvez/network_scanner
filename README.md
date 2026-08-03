@@ -1,3 +1,11 @@
+These fixes are done by Claude AI and is currently used in my personal Hass instance.
+
+- Add OptionsFlow so mac_mapping/ip_range can be edited after initial setup via Configure, instead of requiring reinstall (fixes How to reconfigure? #14)
+- Auto-reload the entry on options update so changes apply immediately
+- Merge configuration.yaml mac_mapping_*/ip_range into the config entry on startup, since it was previously only used as a setup-wizard default and silently ignored afterward
+- (Untested) Fix sensor.py so mac_mapping entries are collected by scanning all present keys instead of walking contiguously, which previously caused every entry above a numbering gap to be silently dropped
+
+
 # Home Assistant Network Scanner Integration
 
 This Home Assistant integration provides a network scanner that identifies all devices on your local network. Utilizing the provided IP range and MAC address mappings, it gives each identified device a user-friendly name and manufacturer information.

@@ -102,31 +102,31 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up the Network Scanner sensor from a config entry."""
     ip_range = config_entry.data.get("ip_range")
     _LOGGER.debug("ip_range: %s", config_entry.data.get("ip_range"))
-    
-    # Initialize mac_mappings list to ensure at least 25 entries
-    mac_mappings_list = []
 
-    # Ensure we have at least 25 entries, even if config is missing some
-    for i in range(25):
-        key = f"mac_mapping_{i+1}"
-        mac_mapping = config_entry.data.get(key, "")
-        mac_mappings_list.append(mac_mapping)
-        _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
+    # Collect every mac_mapping_N key present in the entry, regardless of
+    # numbering gaps. Previously this walked mac_mapping_26, 27, 28...
+    # contiguously and stopped at the first missing key, which meant
+    # deleting/clearing a single entry in the middle (e.g. mac_mapping_40)
+    # would silently drop every entry numbered above it, even though their
+    # data was still stored. Sorting and including whatever keys actually
+    # exist avoids that entirely.
+    def _slot_number(key):
+        suffix = key[len("mac_mapping_"):]
+        return int(suffix) if suffix.isdigit() else 0
 
-    # Continue adding additional mac mappings if present in the config
-    i = 25
-    while True:
-        key = f"mac_mapping_{i+1}"
-        if key in config_entry.data:
-            mac_mapping = config_entry.data.get(key)
-            mac_mappings_list.append(mac_mapping)
-            _LOGGER.debug("mac_mapping_%s: %s", i+1, mac_mapping)
-            i += 1
-        else:
-            break
+    mapping_items = sorted(
+        (
+            (key, value)
+            for key, value in config_entry.data.items()
+            if key.startswith("mac_mapping_") and value
+        ),
+        key=lambda item: _slot_number(item[0]),
+    )
+    for key, value in mapping_items:
+        _LOGGER.debug("%s: %s", key, value)
 
     # Combine mac mappings into a newline-separated string
-    mac_mappings = "\n".join(mac_mappings_list)
+    mac_mappings = "\n".join(value for _, value in mapping_items)
     _LOGGER.debug("mac_mappings: %s", mac_mappings)
 
     # Set up the network scanner entity
